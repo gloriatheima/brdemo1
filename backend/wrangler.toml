@@ -1,20 +1,21 @@
-# wrangler.toml - 带 R2 / Durable Object / KV / D1 binding 的示例配置（用于本地测试）
-# 注意：请在上线前从文件中移除任何明文敏感信息并改用 `wrangler secret put` 注入。
-
+# backend/wrangler.toml (示例 - 不含明文 secret)
 name = "br-proxy-worker"
+type = "javascript"
 main = "src/index.js"
 compatibility_date = "2025-09-02"
-
-# 兼容 nodejs 内建模块（例如 @cloudflare/puppeteer 可能需要），根据需要启用
-# 如果你仍然遇到 node:buffer 等运行时警告/错误，请保留该项；否则可删除
+# 根据需要启用 nodejs 兼容层
 compatibility_flags = ["nodejs_compat"]
 
-# ---------- AI binding ----------
-# 将 Workers AI 绑定注入 env.AI，这样你的代码中可以调用 env.AI.run(...)
-# 说明：确保你的账号/区域已启用 Workers AI（否则在运行时可能报错）
+# 如果你希望在 toml 中指定 site（monorepo 前端在 ../frontend/dist）
+[site]
+bucket = "../frontend/dist"
+# entry-point 可选；多数情况下使用 --site 参数或设置 entry-point="." 也可
+#entry-point = "workers-site"
+
+# AI binding（保持 binding 名称，但不要把密钥放在文件中）
+# 若你的 wrangler 版本/文档要求不同，请按官方格式调整
 ai = { binding = "AI" }
 
-# Cloudflare Account ID（可以放 vars，也可以放入 CONFIG_SECRET）
 account_id = "fcaaec845fe02e091365a0103ea4b97f"
 
 [vars]
@@ -22,58 +23,35 @@ BR_API_BASE = "https://api.cloudflare.com/client/v4/accounts"
 BR_ACCOUNT_ID = "fcaaec845fe02e091365a0103ea4b97f"
 DEBUG_SEO = "1"
 
-# 临时测试可保留明文（上线前请删除或改用 secrets）
-# 建议做法：运行 `wrangler secret put BR_API_TOKEN` 并移除此行
-BR_API_TOKEN = "EWIvq7q8lZbR88iQEFXdixG78xDuCDttDZaOqzmb"
-# 如果你仍希望在本地保留，先注释上面行并使用 secret 代替
+# 移除明文令牌。不要在此处写 BR_API_TOKEN。
+# 使用本地命令设置 secret：
+#   cd backend && npx wrangler secret put BR_API_TOKEN
+# 或在 CI 中把它放到 GitHub Secrets (示例名字: BR_API_TOKEN)，并在 workflow 中注入。
+# BR_API_TOKEN = "EWIvq7q8lZbR88iQEFXdixG78xDuCDttDZaOqzmb"
 
-# 保留 WORKERS_AI_ENDPOINT 作为备用/回退（可选）
-WORKERS_AI_ENDPOINT = "https://api.cloudflare.com/client/v4/accounts/fcaaec845fe02e091365a0103ea4b97f/ai/run/@cf/deepgram/aura-1"
+WORKERS_AI_ENDPOINT = "https://api.cloudflare.com/client/v4/accounts/YOUR_ACCOUNT_ID/ai/run/@cf/deepgram/aura-1"
 
-# ---------- R2 binding ----------
-# 在 Cloudflare Dashboard 创建 R2 bucket，并把 bucket_name 填到这里
 [[r2_buckets]]
-binding = "AUDIO_BUCKET"          # 在 Worker 中通过 env.AUDIO_BUCKET 访问
+binding = "AUDIO_BUCKET"
 bucket_name = "br-makeyourbrowsertalk"
 preview_bucket_name = "br-makeyourbrowsertalk-preview"
-# preview_bucket_name = "your-audio-bucket-name-preview"   # 可选（preview）
-# 与 seo analytic 共享存储
 
-# ---------- Durable Objects binding ----------
-# Durable Object Namespace 需先在 Cloudflare 控制台或 wrangler 创建
-# 说明：wrangler v4 使用 [durable_objects] + bindings array
 [durable_objects]
 bindings = [
   { name = "MY_DO_NAMESPACE", class_name = "BrDurableObject" }
 ]
 
-# Migrations note: wrangler warned about migrations; keep migrations only for class changes
-# IMPORTANT: do not place ai binding or other top-level keys inside migrations section
 [[migrations]]
 tag = "v1"
 new_classes = [ "BrDurableObject" ]
 
-
-
-# ---------- KV Namespaces ----------
-# 创建 KV namespace 后会得到 id，把 id 填入此处（或使用 wrangler kv:namespace create 自动注入）
 [[kv_namespaces]]
 binding = "MY_KV"
-id = "79e6f0c6a3cc419ab33be66109d027e8"   # 替换为实际 namespace id
+id = "79e6f0c6a3cc419ab33be66109d027e8"
 preview_id = "4af56a58f9414c6f8b40a5439bc8d315"
 
-# ---------- D1 (SQL) binding ----------
-# 在 Cloudflare Dashboard 创建 D1 database，然后在此处绑定
 [[d1_databases]]
-binding = "MY_D1"                  # 在 Worker 中通过 env.MY_D1 使用（提供 SQL 接口）
-database_name = "br-d1"   # D1 控制台里的 database 名称
-database_id = "49eb78b4-6f5c-4d8d-bd8b-d035aeb25235"  # 替换为 D1 的实际 id
+binding = "MY_D1"
+database_name = "br-d1"
+database_id = "49eb78b4-6f5c-4d8d-bd8b-d035aeb25235"
 preview_database_id = "38443b5f-9267-484e-af96-a16daa614112"
-
-# ---------- 环境示例（可选） ----------
-# 可以为不同环境分别覆盖 vars / bindings：
-# [env.production]
-# account_id = "..."
-# [[env.production.r2_buckets]]
-# binding = "AUDIO_BUCKET"
-# bucket_name = "prod-audio-bucket"
