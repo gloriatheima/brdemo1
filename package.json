@@ -1,47 +1,14 @@
 {
-  "name": "brdemo1",
-  "version": "0.1.0",
+  "name": "brdemo-monorepo",
   "private": true,
-  "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
-  },
-  "dependencies": {
-    "bootstrap": "^4.6.2",
-    "bootstrap-vue": "^2.23.1",
-    "core-js": "^3.8.3",
-    "less": "^4.4.2",
-    "less-loader": "^12.3.0",
-    "vue": "^2.6.14"
-  },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3",
-    "vue-template-compiler": "^2.6.14"
+    "concurrently": "^8.0.0"
   },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead"
-  ]
+  "scripts": {
+    "start:backend": "cd backend && npx wrangler dev --local --port 8787",
+    "start:frontend": "cd frontend && npm run serve",
+    "dev": "concurrently \"npm: start:backend\" \"npm: start:frontend\"",
+    "build:frontend": "cd frontend && npm run build",
+    "publish:backend": "cd backend && npx wrangler publish"
+  }
 }
