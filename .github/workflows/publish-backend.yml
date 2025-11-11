@@ -1,0 +1,46 @@
+name: Build frontend and publish Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install & build frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install backend deps
+        working-directory: ./backend
+        run: |
+          npm ci || true
+
+      - name: Ensure frontend build exists
+        run: |
+          if [ ! -d frontend/dist ]; then
+            echo "frontend/dist not found. Build failed?"
+            ls -la frontend || true
+            exit 1
+          fi
+
+      - name: Publish Worker (with site = frontend/dist)
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          BR_API_TOKEN: ${{ secrets.BR_API_TOKEN }}
+        working-directory: ./backend
+        run: |
+          npx wrangler publish --site ../frontend/dist
